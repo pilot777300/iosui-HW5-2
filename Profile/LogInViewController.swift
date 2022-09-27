@@ -9,27 +9,31 @@ import UIKit
 
 class LogInViewController: UIViewController {
  
-private lazy var logo = UIImageView()
- private lazy var email = UITextField()
- private lazy var password = UITextField()
- private lazy var loginButton = UIButton()
-
-    override func viewDidLoad() {
-        super.viewDidLoad()
-     
-        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow(sender:)), name: UIResponder.keyboardWillShowNotification, object: nil);
-
-        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide(sender:)), name: UIResponder.keyboardWillHideNotification, object: nil);
-        self.view.endEditing(true) //?
-        
-        navigationController?.isNavigationBarHidden = true
-        view.backgroundColor = .white
-        
+    private lazy var scrollView: UIScrollView = {
+     let scrollView = UIScrollView()
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        return scrollView
+    }()
+    
+    private lazy var stackView: UIStackView = {
+        let stackView = UIStackView()
+        stackView.axis = .vertical
+        stackView.spacing = 10
+        stackView.distribution = .fillEqually
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+        return stackView
+    }()
+    
+    private lazy var logo: UIImageView = {
+       let logo = UIImageView()
         logo.backgroundColor = .white
         logo.image = UIImage(named: "logo")
         logo.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(logo)
-        
+        return logo
+    }()
+    
+    private lazy var email: UITextField = {
+    let email = UITextField()
         email.layer.borderWidth = 0.5
         email.layer.borderColor = UIColor.lightGray.cgColor
         email.placeholder = "e-mail"
@@ -43,10 +47,13 @@ private lazy var logo = UIImageView()
         email.keyboardType = UIKeyboardType.default
         email.clearButtonMode = UITextField.ViewMode.whileEditing
         email.returnKeyType = UIReturnKeyType.done
-        self.view.endEditing(true)
+      //  self.view.endEditing(true)
         email.resignFirstResponder()
-        self.view.addSubview(email)
-        
+        return email
+    }()
+    
+    private lazy var password: UITextField = {
+        let password = UITextField()
         password.layer.borderWidth = 0.5
         password.layer.borderColor = UIColor.lightGray.cgColor
         password.contentVerticalAlignment = UIControl.ContentVerticalAlignment.center
@@ -59,8 +66,12 @@ private lazy var logo = UIImageView()
         password.layer.cornerRadius = 10
         password.layer.maskedCorners = [.layerMaxXMaxYCorner, .layerMinXMaxYCorner]
         password.isSecureTextEntry = true
-        self.view.addSubview(password)
-        
+        return password
+    }()
+    
+    
+    private lazy var loginButton: UIButton = {
+        let loginButton = UIButton()
         loginButton.backgroundColor = UIColor(named: "MyColor")
         loginButton.setTitle("Log in", for: .normal)
         loginButton.setTitleColor(.white, for: .normal)
@@ -69,26 +80,78 @@ private lazy var logo = UIImageView()
         loginButton.translatesAutoresizingMaskIntoConstraints = false
         loginButton.layer.cornerRadius = 10
         loginButton.addTarget(self, action: #selector(loginButtonPressed), for: .touchUpInside)
-        self.view.addSubview(loginButton)
+        return loginButton
+    }()
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        self.setGestures()
+        self.view.addSubview(self.scrollView)
+        self.scrollView.addSubview(self.stackView)
+       // self.stackView.addArrangedSubview(logo)
+        self.stackView.addArrangedSubview(email)
+        self.stackView.addArrangedSubview(password)
+        self.stackView.addArrangedSubview(loginButton)
+        let scrollViewConstraints = self.scrollViewConstraints()
+        NSLayoutConstraint.activate(scrollViewConstraints)
+        navigationController?.isNavigationBarHidden = true
+        view.backgroundColor = .white
+        view.addSubview(logo)
+        setConstraints()
+
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(self.didShowKeyboard(_:)),
+                                               name: UIResponder.keyboardWillShowNotification,
+                                               object: nil)
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(self.didHideKeyboard(_:)),
+                                               name: UIResponder.keyboardWillHideNotification,
+                                               object: nil)
+    }
+    
+    
+    private func setGestures() {
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(self.hideKeyboard))
+        self.view.addGestureRecognizer(tapGesture)
+    }
+    
+    private func scrollViewConstraints() -> [NSLayoutConstraint] {
+        let topAnchor = self.scrollView.topAnchor.constraint(equalTo: self.view.topAnchor)
+        let leadingAnchor = self.scrollView.leadingAnchor.constraint(equalTo: self.view.leadingAnchor)
+        let trailingAnchor = self.scrollView.trailingAnchor.constraint(equalTo: self.view.trailingAnchor)
+        let bottomAnchor = self.scrollView.bottomAnchor.constraint(equalTo: self.view.bottomAnchor)
         
-        constraints()
+        return [
+            topAnchor, leadingAnchor, trailingAnchor, bottomAnchor
+        ]
+    }
+    
+    private func stackViewConstraints() -> [NSLayoutConstraint] {
+        let centerYConstraint = self.stackView.centerYAnchor.constraint(equalTo: self.scrollView.centerYAnchor)
+        let leadingConstraint = self.stackView.leadingAnchor.constraint(equalTo: self.view.leadingAnchor, constant: 50)
+        let trailingConstraint = self.stackView.trailingAnchor.constraint(equalTo: self.view.trailingAnchor, constant: -50)
+        let heightConstraint = self.stackView.heightAnchor.constraint(equalToConstant: 180)
+        
+        return [
+            centerYConstraint, leadingConstraint, trailingConstraint, heightConstraint
+        ]
+    }
+    
+    @objc private func hideKeyboard() {
+        self.view.endEditing(true)
+        self.scrollView.setContentOffset(CGPoint(x: 0, y: 0), animated: true)
+    }
 
-    }
-   
-    @objc func keyboardWillShow(sender: NSNotification) {
-         self.view.frame.origin.y = -90 // двигаем view на 90 pts вверх
-    }
-
-    @objc func keyboardWillHide(sender: NSNotification) {
-         self.view.frame.origin.y = 0 // возвращаем назад при скрытии клавиатуры
-    }
-   
     @objc func loginButtonPressed(sender: UIButton) {
         let profileViewController = ProfileViewController()
        self.navigationController?.pushViewController(profileViewController, animated: true)
    }
     
-    private func constraints() {
+    private func setConstraints() {
         let safeArea = view.safeAreaLayoutGuide
      NSLayoutConstraint.activate([
         logo.centerXAnchor.constraint(equalTo: safeArea.centerXAnchor),
@@ -97,7 +160,7 @@ private lazy var logo = UIImageView()
        logo.heightAnchor.constraint(equalToConstant: 100),
         
         email.centerXAnchor.constraint(equalTo: safeArea.centerXAnchor),
-        email.topAnchor.constraint(equalTo: logo.bottomAnchor, constant: 120),
+        email.topAnchor.constraint(equalTo: logo.bottomAnchor, constant: 80),
         email.heightAnchor.constraint(equalToConstant: 50),
         email.leadingAnchor.constraint(equalTo: safeArea.leadingAnchor, constant: 16),
         email.trailingAnchor.constraint(equalTo: safeArea.trailingAnchor, constant: -16),
@@ -116,8 +179,24 @@ private lazy var logo = UIImageView()
      ])
     
     }
-  
+    @objc private func didShowKeyboard(_ notification: Notification) {
+        if let keyboardFrame: NSValue = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue {
+            self.view.frame.origin.y = -35
+        }
+    }
+    
+    @objc private func didHideKeyboard(_ notification: Notification) {
+        self.forcedHidingKeyboard()
+    }
+    
+    @objc private func forcedHidingKeyboard() {
+        self.view.endEditing(true)
+        self.scrollView.setContentOffset(CGPoint(x: 0, y: 0), animated: true)
+    }
 }
+
+
+
  
 
 
